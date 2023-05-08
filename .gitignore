@@ -1,0 +1,10 @@
+# autoenv files
+.autoenv
+.autoleave
+
+# python cache
+__pycache__/
+
+
+# data
+*.csv
