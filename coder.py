@@ -95,7 +95,8 @@ Currently you are in DEBUG mode, so there are some extra things you should do:
 
     def on_chat_message(message:str) -> str:
         """Process a user's message and return the AI's response"""
-        
+        nonlocal clear_context
+
         # if the program changed since the AI edited it, tell the AI
         if manager.is_program_changed():
             clear_context() # clear any previous code context
