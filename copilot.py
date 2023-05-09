@@ -49,8 +49,9 @@ class ProgramManager:
 
         # TODO: some sort of chat history
 
-        # save the current state of the program
-        self.current_program = self.get_program()
+        # save the current state of the program 
+        # (start with blank program, so we know to tell LLM if file wasn't blank)
+        self.current_program = ''
 
     def get_program(self) -> str:
         """Return the current program"""
