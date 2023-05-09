@@ -1,4 +1,4 @@
-from archytas.agent import Agent
+from archytas.agent import Agent, no_spinner
 from dual_input import run_dual_input, register_chat_callback, register_terminal_callback
 import subprocess
 import sys
@@ -80,6 +80,7 @@ def main():
         file_path = sys.argv[1]
 
     manager = ProgramManager(file_path)
+    clear_context = lambda: ...
 
 
     agent = Agent(prompt='''
@@ -89,7 +90,7 @@ Currently you are in DEBUG mode, so there are some extra things you should do:
 - make sure there is only one program in your response
 - don't tell the user about libraries they need to install
 - don't worry about a full explanation of the code. You can skip straight to the code
-''')
+''', spinner=no_spinner)
 
 
     def on_chat_message(message:str) -> str:
@@ -97,7 +98,8 @@ Currently you are in DEBUG mode, so there are some extra things you should do:
         
         # if the program changed since the AI edited it, tell the AI
         if manager.is_program_changed():
-            agent.messages.append({'role':'system', 'content': f'The user modified the program. The current program is:\n```python\n{manager.get_program()}\n```'})
+            clear_context() # clear any previous code context
+            clear_context = agent.add_managed_context(f'Context: The user modified the program. The current program is:\n```python\n{manager.get_program()}\n```')
         
         # send the user message to the agent, and get the response
         response = agent.query(message)
