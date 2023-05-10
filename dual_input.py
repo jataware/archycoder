@@ -17,7 +17,7 @@ flask.cli.show_server_banner = lambda *args: None
 
 
 app = Flask(__name__)
-
+# HTML template
 index_html = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -25,12 +25,71 @@ index_html = '''
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Chat Assistant & Terminal</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .chat-header {
+            text-align: center;
+            padding: 1rem;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .chat-history {
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #ccc;
+            padding: 1rem;
+        }
+
+        .chat-controls {
+            display: flex;
+            margin-top: 1rem;
+        }
+
+        .chat-controls input {
+            flex-grow: 1;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+        }
+
+        .chat-controls button {
+            padding: 0.5rem;
+            background-color: #007BFF;
+            color: white;
+            border: 1px solid #007BFF;
+            cursor: pointer;
+        }
+
+        .chat-controls button:hover {
+            background-color: #0056B3;
+        }
+    </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <div id="chat_history" style="width: 50%; height: 300px; overflow-y: scroll; border: 1px solid black; padding: 10px;"></div>
-    <input id="chat_input" type="text" style="width: 50%;">
-    <button id="send_button">Send</button>
+    <div class="container">
+        <div class="chat-header">
+            <h2>AI Chat Assistant & Terminal</h2>
+        </div>
+        <div id="chat_history" class="chat-history"></div>
+        <div class="chat-controls">
+            <input id="chat_input" type="text" placeholder="Type your message...">
+            <button id="send_button">Send</button>
+        </div>
+    </div>
 
     <script>
         function appendMessage(message) {
