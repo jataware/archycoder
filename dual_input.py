@@ -4,7 +4,7 @@ import flask.cli
 import threading
 
 from typing import Callable
-from easyrepl import readl
+# from easyrepl import readl
 
 # Disable Flask's default logging
 log = logging.getLogger("werkzeug")
@@ -158,15 +158,15 @@ def send_message():
 
     return jsonify({"response": response})
 
-def command_input_loop():
-    assert terminal_callback is not None, "terminal_callback must be registered before running the Flask app"
-    while True:
-        # command_input = input(">>> ")
-        command_input = readl(prompt=">>> ")
-        terminal_callback(command_input)
-        # print(f"Executed: {command_input}")
-        # # Execute command_input using os.system or subprocess
-        # # ...
+# def command_input_loop():
+#     assert terminal_callback is not None, "terminal_callback must be registered before running the Flask app"
+#     while True:
+#         # command_input = input(">>> ")
+#         command_input = readl(prompt=">>> ")
+#         terminal_callback(command_input)
+#         # print(f"Executed: {command_input}")
+#         # # Execute command_input using os.system or subprocess
+#         # # ...
 
 
 def run_dual_input():
@@ -174,8 +174,8 @@ def run_dual_input():
     print(f"Chat Assistant at {app_url}")
     
     # start the thread with the terminal input
-    command_input_thread = threading.Thread(target=command_input_loop, daemon=True)
-    command_input_thread.start()
+    # command_input_thread = threading.Thread(target=command_input_loop, daemon=True)
+    # command_input_thread.start()
 
     # Set up the Flask app to run with minimal output
-    app.run(host="127.0.0.1", port=5000, debug=False, use_reloader=False)
+    app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
