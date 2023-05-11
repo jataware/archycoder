@@ -345,7 +345,7 @@ def main():
     agent = Agent(prompt=coder_prompt, spinner=no_spinner)
 
     #TODO: loaded history should be displayed in the chat window
-    agent.messages = manager.load_chat_history()
+    # agent.messages = manager.load_chat_history()
 
     def on_chat_message(message:str) -> str:
         """Process a user's message and return the AI's response"""
@@ -369,6 +369,13 @@ def main():
         #     print(edits)
         #     print(add_line_numbers(manager.get_program()))
         # ######################
+
+        # update the start/end line numbers of the edits to account for space added by previous edits
+        offset = 0
+        for edit in edits:
+            edit['start'] += offset
+            edit['end'] += offset
+            offset += len(edit['code'].splitlines()) - (edit['end'] - edit['start']) + 3 # +3 for the # <<<<<<< ======= and >>>>>>> lines
 
         # insert edits into the program
         for edit in edits:
