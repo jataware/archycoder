@@ -11,4 +11,4 @@ __pycache__/
 
 # files generated during sessions
 sessions/*.py
-sessions/*.chat
+*.chat
