@@ -46,12 +46,10 @@ def json_block_iter(message:str) -> Generator[str|Edit, None, None]:
         except ValueError:
             message = message.lstrip()
             if message:
-                print(f"Found text block: {message}")
                 yield message
             return
         
         if i != 0:
-            print(f"Found text block: {message[:i]}")
             yield message[:i]
             message = message[i:]
         
@@ -78,11 +76,9 @@ def json_block_iter(message:str) -> Generator[str|Edit, None, None]:
         if isinstance(parsed_block, list):
             for item in parsed_block:
                 assert 'code' in item and 'start' in item and 'end' in item, f"INTERNAL ERROR: Expected json block to have keys 'code', 'start', and 'end', but found {parsed_block}"
-                print(f"Found json block: {parsed_block}")
                 yield dict(item)
         elif isinstance(parsed_block, dict):
             assert 'code' in parsed_block and 'start' in parsed_block and 'end' in parsed_block, f"INTERNAL ERROR: Expected json block to have keys 'code', 'start', and 'end', but found {parsed_block}"
-            print(f"Found json block: {parsed_block}")
             yield dict(parsed_block)
         else:
             raise ValueError(f"INTERNAL ERROR: Expected json block to be a dict or list, but found {parsed_block}")
