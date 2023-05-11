@@ -24,7 +24,7 @@ index_html = '''
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat Assistant & Terminal</title>
+    <title>Coding Assistant</title>
     <style>
         * {
             box-sizing: border-box;
@@ -82,7 +82,7 @@ index_html = '''
 <body>
     <div class="container">
         <div class="chat-header">
-            <h2>AI Chat Assistant & Terminal</h2>
+            <h2>Coding Assistant</h2>
         </div>
         <div id="chat_history" class="chat-history"></div>
         <div class="chat-controls">
