@@ -71,10 +71,47 @@ index_html = '''
             color: white;
             border: 1px solid #007BFF;
             cursor: pointer;
+            width: 80px; /* Add a fixed width for the button */
+            position: relative; // for centering the spinner
         }
 
         .chat-controls button:hover {
             background-color: #0056B3;
+        }
+
+        .chat-controls button:disabled {
+            background-color: #ccc;
+            border-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .chat-controls button:disabled:hover {
+            background-color: #ccc;
+        }
+
+        .button-loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
+            border: 4px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: button-loading-spinner 0.35s ease infinite;
+        }
+
+        @keyframes button-loading-spinner {
+            from {
+                transform: rotate(0turn);
+            }
+            to {
+                transform: rotate(1turn);
+            }
         }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -87,7 +124,9 @@ index_html = '''
         <div id="chat_history" class="chat-history"></div>
         <div class="chat-controls">
             <input id="chat_input" type="text" placeholder="Type your message...">
-            <button id="send_button">Send</button>
+            <button id="send_button">
+                <span class="button_text">Send</span>
+            </button>
         </div>
     </div>
 
@@ -97,13 +136,29 @@ index_html = '''
             $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
         }
 
+        function toggleSendButton(state) {
+            $("#send_button").prop("disabled", !state);
+            if (!state) {
+                $(".button_text").addClass("button-loading");
+                $(".button_text").text("");
+            } else {
+                $(".button_text").removeClass("button-loading");
+                $(".button_text").text("Send");
+            }
+        }
+
         $("#send_button").click(function() {
             var message = $("#chat_input").val();
+            if (!message) return;
+
             $("#chat_input").val("");
             appendMessage("You: " + message);
 
+            toggleSendButton(false);
+
             $.post("/send_message", {message: message}, function(data) {
                 appendMessage("AI: " + data.response);
+                toggleSendButton(true);
             });
         });
 
@@ -111,6 +166,11 @@ index_html = '''
             if (e.which === 13) {  // Enter key
                 $("#send_button").click();
             }
+        });
+
+        // Enable the send button when the page is ready
+        $(document).ready(function() {
+            toggleSendButton(true);
         });
     </script>
 </body>
