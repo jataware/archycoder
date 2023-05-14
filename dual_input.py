@@ -1,10 +1,8 @@
 import logging
 from flask import Flask, render_template_string, request, jsonify
 import flask.cli
-import threading
 
 from typing import Callable, TypedDict
-# from easyrepl import readl
 
 # Disable Flask's default logging
 log = logging.getLogger("werkzeug")
@@ -13,7 +11,7 @@ log.setLevel(logging.ERROR)
 # really disable extra logging that they don't want you to disable lol: 
 # https://github.com/cs01/gdbgui/issues/425#issuecomment-1086871191
 # https://github.com/cs01/gdbgui/issues/425#issuecomment-1119836533
-flask.cli.show_server_banner = lambda *args: None
+flask.cli.show_server_banner = lambda *_: None
 
 
 app = Flask(__name__)
@@ -199,18 +197,10 @@ class ChatMessage(TypedDict):
     role: str
     content: str
 
-history_callback = None
+history_callback = lambda: []
 """
 def history_callback() -> list[ChatMessage]:
     # Return a list of ChatMessage objects to be inserted at the start of the chat history
-"""
-
-terminal_callback = None
-"""
-def terminal_callback(command:str) -> None:
-    # Execute command using os.system or subprocess
-    # any output should be printed to the terminal
-    # no value should be returned
 """
 
 def register_chat_callback(callback:Callable[[str], str]):
@@ -221,10 +211,6 @@ def register_history_callback(callback:Callable[[], list[ChatMessage]]):
     global history_callback
     history_callback = callback
 
-def register_terminal_callback(callback:Callable[[str], None]):
-    global terminal_callback
-    terminal_callback = callback
-
 
 @app.route("/")
 def index():
@@ -233,41 +219,21 @@ def index():
 @app.route("/send_message", methods=["POST"])
 def send_message():
     message = request.form["message"]
-
-    assert chat_callback is not None, "chat_callback must be registered before running the Flask app"
-
     response = chat_callback(message)
-
-    # # Process the message and respond with the AI's response
-    # response = "AI response goes here"  # Replace with actual AI response
-
     return jsonify({"response": response})
 
 @app.route("/get_history")
 def get_history():
-    assert history_callback is not None, "history_callback must be registered before running the Flask app"
     messages = history_callback()
     return jsonify({"messages": messages})
 
 
-# def command_input_loop():
-#     assert terminal_callback is not None, "terminal_callback must be registered before running the Flask app"
-#     while True:
-#         # command_input = input(">>> ")
-#         command_input = readl(prompt=">>> ")
-#         terminal_callback(command_input)
-#         # print(f"Executed: {command_input}")
-#         # # Execute command_input using os.system or subprocess
-#         # # ...
-
-
 def run_dual_input():
+    assert chat_callback is not None, "chat_callback must be registered before running the Flask app"
+    assert history_callback is not None, "history_callback must be registered before running the Flask app"
+    
     app_url = "http://127.0.0.1:5000"
     print(f"Chat Assistant at {app_url}")
     
-    # start the thread with the terminal input
-    # command_input_thread = threading.Thread(target=command_input_loop, daemon=True)
-    # command_input_thread.start()
-
     # Set up the Flask app to run with minimal output
     app.run(host="127.0.0.1", port=5000, debug=True, use_reloader=False)
