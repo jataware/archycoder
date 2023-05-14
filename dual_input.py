@@ -178,19 +178,19 @@ index_html = '''
 '''
 
 
+chat_callback = None
 """
 def chat_callback(message:str) -> str:
     # Process a user's message and return the AI's response
 """
-chat_callback = None
 
+terminal_callback = None
 """
 def terminal_callback(command:str) -> None:
     # Execute command using os.system or subprocess
     # any output should be printed to the terminal
     # no value should be returned
 """
-terminal_callback = None
 
 def register_chat_callback(callback:Callable[[str], str]):
     global chat_callback

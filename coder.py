@@ -350,6 +350,7 @@ def main():
     def on_chat_message(message:str) -> str:
         """Process a user's message and return the AI's response"""
         nonlocal clear_context
+        print(f'User: {message}')
 
         # if the program changed since the AI edited it, tell the AI
         if manager.is_program_changed():
