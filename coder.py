@@ -173,6 +173,18 @@ def get_context_free_messages(messages:list[Message]) -> list[Message]:
 
 
 
+def sorted_edits(edits:list[Edit]) -> list[Edit]:
+    """
+    sort edits by start/end indices
+    raise error if edits overlap
+    """
+    sorted_edits = sorted(edits, key=lambda e: (e['start'], e['end']))
+    for i in range(len(sorted_edits)-1):
+        if sorted_edits[i]['end'] > sorted_edits[i+1]['start']:
+            raise ValueError(f"Edits overlap: {sorted_edits[i]} and {sorted_edits[i+1]}")
+    return sorted_edits
+
+
 class ProgramManager:
     def __init__(self, filename:str):
         self.filename = filename
@@ -207,10 +219,12 @@ class ProgramManager:
         # <suggested code>
         # >>>>>>> LLM Suggestion
         newline = '\r\n' if '\r\n' in program else '\n' #detect the line ending
+        if len(code) > 0 and not code.endswith(newline): 
+            code += newline # ensure the code ends with a newline
         new_program = insert_line(program, f"<<<<<<< Original Code{newline}", start)
         new_program = insert_line(new_program, f"======={newline}", end+1)
-        new_program = insert_line(new_program, f"{code}{newline}>>>>>>> LLM Suggestion{newline}", end+2)
-        
+        new_program = insert_line(new_program, f"{code}>>>>>>> LLM Suggestion{newline}", end+2)
+
         with open(self.filename, 'w') as f:
             f.write(new_program)
         
@@ -245,21 +259,30 @@ Whenever you are asked to write code, you may describe your thought process, how
 ```json
 {
     "code":  #your code here as a string
-    "start": #the line number where your code should be inserted
-    "end":   #the line number where your code should end
+    "start": #the line number where your code start being inserted (inclusive)
+    "end":   #the line number where your code stops being inserted (exclusive)
+             #code on lines [start, end) will be replaced by your code
+             #start == end means an insertion without any replacement
 }
 ```
 If you want to modify multiple parts of the program, you may include multiple code blocks in your response as separate json objects.
 
+# Examples
 For example, if the user asks you to write a function that returns the sum of two numbers, you could respond with:
     Sure, I can help you with that. Here is the code:
     ```json
     {
-        "code": "def add(a, b):\n    return a + b",
+        "code": "def add(a, b):\n    return a + b\n",
         "start": 0,
         "end": 0
     }
     ```
+
+And the resulting code would look like this:
+```python
+0| def add(a, b):
+1|     return a + b
+```
 
 Another example. Say the user's code looks like this:
 ```python
@@ -285,7 +308,7 @@ Lets say we have the same code example, and the user asks to make the add functi
     I overwrote the add function with a new version that takes an arbitrary number of arguments:
     ```json
     {
-        "code": "def add(*args):\n    return sum(args)",
+        "code": "def add(*args):\n    return sum(args)\n",
         "start": 0,
         "end": 2
     }
@@ -298,7 +321,7 @@ For example, lets say its the same code example, and the user asks you to change
     I made this replacement for the add function:
     ```json
     {
-        "code": "def add(*args):\n    return sum(args)",
+        "code": "def add(*args):\n    return sum(args)\n",
         "start": 0,
         "end": 2
     }
@@ -306,9 +329,9 @@ For example, lets say its the same code example, and the user asks you to change
     And I made a new divide function:
     ```json
     {
-        "code": "    return a * b\n\ndef divide(a, b):\n    return a / b\n\n",
-        "start": 4,
-        "end": 4
+        "code": "\ndef divide(a, b):\n    return a / b\n\n",
+        "start": 5,
+        "end": 5
     }
     ```
 Alternatively you can bundle all the changes up into a single json list
@@ -316,14 +339,14 @@ Alternatively you can bundle all the changes up into a single json list
     ```json
     [
         {
-            "code": "def add(*args):\n    return sum(args)",
+            "code": "def add(*args):\n    return sum(args)\n",
             "start": 0,
             "end": 2
         },
         {
-            "code": "    return a * b\n\ndef divide(a, b):\n    return a / b\n\n",
-            "start": 4,
-            "end": 4
+            "code": "\ndef divide(a, b):\n    return a / b\n\n",
+            "start": 5,
+            "end": 5
         }
     ]
     ```
@@ -332,12 +355,13 @@ Notice how for appending to the end of the code, since there's no newline, you h
 
 # Tips/Notes
 - DO NOT INCLUDE LINE NUMBERS IN YOUR CODE. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself.
-- follow the style of the user's code
-- code edits start before the start line, and go up to, but not including the end line
-- only write code/changes that are necessary. Do not overwrite existing code if it is not necessary.
-- don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
-- don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it.
-- use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
+- Follow the style of the user's code
+- Code edits start before the `start` line, and go up to, but not including the `end` line. If `end > start`, the last newline from the line before `end` will be included as part of the selection to edit.
+- Be mindful of the newlines you add and, if possible, maintain the existing spacing to ensure consistency and readability in the code. Typically, edit strings will end with zero extra newlines, unless you're modifying whitespace.
+- Only write code/changes that are necessary. Do not overwrite existing code if it is not necessary.
+- Don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
+- Don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it.
+- Use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
 '''
 
 def set_current_program_context(manager: ProgramManager, agent: Agent) -> None:
@@ -376,9 +400,16 @@ def main():
     
     def on_chat_message(message:str) -> str:
         """Process a user's message and return the AI's response"""
-        # nonlocal clear_context
-        print(f'User: {message}')
         
+        # if the program changed since the AI edited it, tell the AI
+        if manager.is_program_changed():
+            agent.clear_all_context()
+            set_current_program_context(manager, agent)
+
+        ########DEBUG#########
+        print(f'User: {message}')
+        ######################
+
         # send the user message to the agent, and get the response
         response = agent.query(message)
 
@@ -387,26 +418,17 @@ def main():
         
         # ########DEBUG#########
         # if edits:
-        #     # print(edits)
-        #     # print(add_line_numbers(manager.get_program()))
-        #     print(agent.messages)
+        #     print(edits)
+        #     print(add_line_numbers(manager.get_program()))
         # ######################
 
-        # update the start/end line numbers of the edits to account for space added by previous edits
-        #TODO: just sort edits, and insert in reverse order
-        offset = 0
-        for edit in edits:
-            edit['start'] += offset
-            edit['end'] += offset
-            offset += len(edit['code'].splitlines()) - (edit['end'] - edit['start']) + 3 # +3 for the # <<<<<<< ======= and >>>>>>> lines
-
         # insert edits into the program
-        for edit in edits:
+        for edit in reversed(sorted_edits(edits)):
             manager.update_program(edit['code'], edit['start'], edit['end'])
         
         manager.save_chat_history(agent.messages)
 
-        #TODO: this should display the current code in the chat window?
+        #TODO: should this be displayed in the chat window?
         #      right now, if the user refreshes, it will show up in the window
         set_current_program_context(manager, agent)
 
