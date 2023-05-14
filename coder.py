@@ -1,5 +1,5 @@
 from archytas.agent import Agent, no_spinner, Role, Message
-from dual_input import run_dual_input, register_chat_callback, register_history_callback, ChatMessage
+from chat_window import run_chat_window, register_chat_callback, register_history_callback, ChatMessage
 import subprocess
 import sys
 from easyrepl import readl
@@ -419,7 +419,7 @@ def main():
     register_history_callback(on_get_chat_history)
 
     # run the UI
-    run_dual_input()
+    run_chat_window()
     
 
 

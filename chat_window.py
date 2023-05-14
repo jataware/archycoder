@@ -197,7 +197,7 @@ class ChatMessage(TypedDict):
     role: str
     content: str
 
-history_callback = lambda: []
+history_callback = lambda: [] #default to empty history
 """
 def history_callback() -> list[ChatMessage]:
     # Return a list of ChatMessage objects to be inserted at the start of the chat history
@@ -228,7 +228,7 @@ def get_history():
     return jsonify({"messages": messages})
 
 
-def run_dual_input():
+def run_chat_window():
     assert chat_callback is not None, "chat_callback must be registered before running the Flask app"
     assert history_callback is not None, "history_callback must be registered before running the Flask app"
     
