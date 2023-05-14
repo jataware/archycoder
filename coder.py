@@ -1,5 +1,5 @@
-from archytas.agent import Agent, no_spinner
-from dual_input import run_dual_input, register_chat_callback, register_terminal_callback
+from archytas.agent import Agent, no_spinner, Role
+from dual_input import run_dual_input, register_chat_callback, register_terminal_callback, register_history_callback, ChatMessage
 import subprocess
 import sys
 from easyrepl import readl
@@ -28,11 +28,19 @@ import pdb
 
 
 
+CONTEXT_PREFIX = 'Context: The current program is:\n'
+
+role_map = {
+    Role.user: 'You',
+    Role.assistant: 'AI',
+    Role.system: 'System'
+}
 
 class Edit(TypedDict):
     code: str
     start: int
     end: int
+
 
 def json_block_iter(message:str) -> Generator[str|Edit, None, None]:
     """
@@ -212,8 +220,7 @@ class ProgramManager:
                 history = json.load(f)
         
         #filter out context messages
-        prefix = 'Context: The user modified the program. The current program is:\n```python\n'
-        history = [message for message in history if not (message['role'] == 'system' and message['content'].startswith(prefix))]
+        history = [message for message in history if not (message['role'] == Role.system and message['content'].startswith(CONTEXT_PREFIX))]
 
         print(f"Loaded {len(history)} messages from {self.chat_history_filename}")
         for message in history:
@@ -221,9 +228,11 @@ class ProgramManager:
 
         return history
     
-    def save_chat_history(self, chat_history: list) -> None:
+    def save_chat_history(self, history: list) -> None:
+        #filter out context messages
+        history = [message for message in history if not (message['role'] == Role.system and message['content'].startswith(CONTEXT_PREFIX))]
         with open(self.chat_history_filename, 'w') as f:
-            json.dump(chat_history, f)
+            json.dump(history, f)
 
 
 coder_prompt = '''
@@ -327,37 +336,55 @@ Notice how for appending to the end of the code, since there's no newline, you h
 - use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
 '''
 
-
+def set_current_program_context(manager: ProgramManager, agent: Agent) -> None:
+    '''
+    Adds the current program context to the chat history as a timed context
+    this should be called every time before a user message is sent to the llm
+    '''
+    lined_program = add_line_numbers(manager.get_program())
+    agent.add_timed_context(f"{CONTEXT_PREFIX}```python\n{lined_program}```")
 
 
 def main():
-    if len(sys.argv) > 2:
-        print("ERROR: too many command-line arguments.\nUsage: python copilot.py [optional_file_to_watch.py]")
-        exit(1)
-    elif len(sys.argv) < 2:
+    # if len(sys.argv) > 2:
+    #     print("ERROR: too many command-line arguments.\nUsage: python copilot.py [optional_file_to_watch.py]")
+    #     exit(1)
+    if len(sys.argv) < 2:
         file_path = readl(prompt="What would you like to name your code file? ")
     else:
         file_path = sys.argv[1]
 
     manager = ProgramManager(file_path)
-    clear_context = lambda: ...
 
     agent = Agent(prompt=coder_prompt, spinner=no_spinner)
 
+    # Load chat history if it exists
     #TODO: loaded history should be displayed in the chat window
-    # agent.messages = manager.load_chat_history()
+    if '--clear-history' not in sys.argv:
+        agent.messages = manager.load_chat_history()
+        # messages = [{'role': role_map[message['role']], 'message': message['message']} for message in agent.messages]
 
+    # initialize the program context
+    set_current_program_context(manager, agent)
+        
+
+    def on_get_chat_history() -> list[ChatMessage]:
+        """Return the chat history"""
+        messages = [ChatMessage(role=role_map[message['role']], content=message['content']) for message in agent.messages]
+        return messages
+    
     def on_chat_message(message:str) -> str:
         """Process a user's message and return the AI's response"""
-        nonlocal clear_context
+        # nonlocal clear_context
         print(f'User: {message}')
 
         # if the program changed since the AI edited it, tell the AI
-        if manager.is_program_changed():
-            clear_context() # clear any previous code context
-            lined_prog = add_line_numbers(manager.get_program())
-            clear_context = agent.add_managed_context(f'Context: The user modified the program. The current program is:\n```python\n{lined_prog}\n```')
-            #this should display the current code in the chat window
+        # if manager.is_program_changed():
+            # clear_context() # clear any previous code context
+        # lined_prog = add_line_numbers(manager.get_program())
+        # agent.add_timed_context(f'Context: The current program is:\n```python\n{lined_prog}\n```')
+        set_current_program_context(manager, agent)
+            #TODO: this should display the current code in the chat window?
         
         # send the user message to the agent, and get the response
         response = agent.query(message)
@@ -366,9 +393,9 @@ def main():
         edits,chat = parse_program(response)
         
         # ########DEBUG#########
-        # if edits:
-        #     print(edits)
-        #     print(add_line_numbers(manager.get_program()))
+        if edits:
+            print(edits)
+            print(add_line_numbers(manager.get_program()))
         # ######################
 
         # update the start/end line numbers of the edits to account for space added by previous edits
@@ -395,6 +422,7 @@ def main():
         
 
     register_chat_callback(on_chat_message)
+    register_history_callback(on_get_chat_history)
     # register_terminal_callback(on_terminal_command)
 
     run_dual_input()

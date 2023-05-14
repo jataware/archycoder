@@ -3,7 +3,7 @@ from flask import Flask, render_template_string, request, jsonify
 import flask.cli
 import threading
 
-from typing import Callable
+from typing import Callable, TypedDict
 # from easyrepl import readl
 
 # Disable Flask's default logging
@@ -131,6 +131,12 @@ index_html = '''
     </div>
 
     <script>
+        function insertChatHistory(messages) {
+            messages.forEach(function(message) {
+                appendMessage(message.role + ': ' + message.content);
+            });
+        }
+
         function appendMessage(message) {
             $("#chat_history").append("<p>" + message + "</p>");
             $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
@@ -171,6 +177,11 @@ index_html = '''
         // Enable the send button when the page is ready
         $(document).ready(function() {
             toggleSendButton(true);
+            
+            // Call history_callback and insert messages into chat history
+            $.get("/get_history", function(data) {
+                insertChatHistory(data.messages);
+            });
         });
     </script>
 </body>
@@ -184,6 +195,16 @@ def chat_callback(message:str) -> str:
     # Process a user's message and return the AI's response
 """
 
+class ChatMessage(TypedDict):
+    role: str
+    content: str
+
+history_callback = None
+"""
+def history_callback() -> list[ChatMessage]:
+    # Return a list of ChatMessage objects to be inserted at the start of the chat history
+"""
+
 terminal_callback = None
 """
 def terminal_callback(command:str) -> None:
@@ -195,6 +216,10 @@ def terminal_callback(command:str) -> None:
 def register_chat_callback(callback:Callable[[str], str]):
     global chat_callback
     chat_callback = callback
+
+def register_history_callback(callback:Callable[[], list[ChatMessage]]):
+    global history_callback
+    history_callback = callback
 
 def register_terminal_callback(callback:Callable[[str], None]):
     global terminal_callback
@@ -217,6 +242,13 @@ def send_message():
     # response = "AI response goes here"  # Replace with actual AI response
 
     return jsonify({"response": response})
+
+@app.route("/get_history")
+def get_history():
+    assert history_callback is not None, "history_callback must be registered before running the Flask app"
+    messages = history_callback()
+    return jsonify({"messages": messages})
+
 
 # def command_input_loop():
 #     assert terminal_callback is not None, "terminal_callback must be registered before running the Flask app"
