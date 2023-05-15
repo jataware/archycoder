@@ -131,13 +131,12 @@ index_html = '''
     <script>
         function insertChatHistory(messages) {
             messages.forEach(function(message) {
-                appendMessage(message.role + ': ' + message.content);
+                appendMessage(message.role, message.content);
             });
         }
 
-        function appendMessage(message) {
-            var chunks = message.split(':');
-            $("#chat_history").append("<p><strong>" + chunks[0] + ":</strong> " + chunks.slice(1).join(':') + "</p>");
+        function appendMessage(name, message) {
+            $("#chat_history").append("<p><strong>" + name + ":</strong> " + message + "</p>");
             $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
         }
 
@@ -157,12 +156,12 @@ index_html = '''
             if (!message) return;
 
             $("#chat_input").val("");
-            appendMessage("You: " + message);
+            appendMessage("You", message);
 
             toggleSendButton(false);
 
             $.post("/send_message", {message: message}, function(data) {
-                appendMessage("AI: " + data.response);
+                appendMessage("AI", data.response);
                 toggleSendButton(true);
             });
         });
@@ -220,7 +219,10 @@ def index():
 @app.route("/send_message", methods=["POST"])
 def send_message():
     message = request.form["message"]
-    response = chat_callback(message)
+    try:
+        response = chat_callback(message)
+    except Exception as e:
+        response = f"Error: {e}"
     return jsonify({"response": response})
 
 @app.route("/get_history")
