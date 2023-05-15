@@ -356,8 +356,7 @@ Notice how for appending to the end of the code, since there's no newline, you h
 # Tips/Notes
 - DO NOT INCLUDE LINE NUMBERS IN YOUR CODE. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself.
 - Follow the style of the user's code
-- Code edits start before the `start` line, and go up to, but not including the `end` line. If `end > start`, the last newline from the line before `end` will be included as part of the selection to edit.
-- Be mindful of the newlines you add and, if possible, maintain the existing spacing to ensure consistency and readability in the code. Typically, edit strings will end with zero extra newlines, unless you're modifying whitespace.
+- Try to maintain the existing spacing to ensure consistency and readability in the code.
 - Only write code/changes that are necessary. Do not overwrite existing code if it is not necessary.
 - Don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
 - Don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it.
