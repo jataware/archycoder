@@ -111,6 +111,9 @@ index_html = '''
                 transform: rotate(1turn);
             }
         }
+        .error-message {
+            color: red;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -136,7 +139,9 @@ index_html = '''
         }
 
         function appendMessage(name, message) {
-            $("#chat_history").append("<p><strong>" + name + ":</strong> " + message + "</p>");
+            var isError = message.toLowerCase().startsWith("error");
+            var messageClass = isError ? "error-message" : "";
+            $("#chat_history").append("<p class='" + messageClass + "'><strong>" + name + ":</strong> " + message + "</p>");
             $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
         }
 
