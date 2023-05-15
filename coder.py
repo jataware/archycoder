@@ -121,7 +121,7 @@ def parse_program(message:str) -> tuple[list[Edit], str]:
     edits = [b for b in chunks if isinstance(b, dict)]
 
     # convert the chunks into a chat message format: [start+1, end+1)\n{code}
-    chat_chunks = [f'[{c["start"]+1}, {c["end"]+1})\n{c["code"]}' if isinstance(c, dict) else c.strip() for c in chunks]
+    chat_chunks = [f'[{c["start"]}, {c["end"]})\n{c["code"]}' if isinstance(c, dict) else c.strip() for c in chunks]
     chat = '\n\n'.join(chat_chunks)
 
     return edits, chat
@@ -131,7 +131,7 @@ def add_line_numbers(program:str) -> str:
     """Add line numbers to a program. Line numbers start at 0"""
     lines = program.splitlines(keepends=True)
     width = len(str(len(lines)))
-    return ''.join([f"{i:>{width}}| {line}" for i, line in enumerate(lines)])
+    return ''.join([f"{i+1:>{width}}| {line}" for i, line in enumerate(lines)])
 
 
 def insert_line(text: str, line: str, i: int) -> str:
@@ -143,7 +143,7 @@ def insert_line(text: str, line: str, i: int) -> str:
     Args:
         text (str): the text to insert the line into
         line (str): the line to insert
-        i (int): the line number to insert the line at. line 0 is the first line of the text
+        i (int): the line number to insert the line at. line 1 is the first line of the text
 
     Raises:
         ValueError: if i is not a valid line number
@@ -153,8 +153,10 @@ def insert_line(text: str, line: str, i: int) -> str:
     """
     # Split the text into lines
     lines = text.splitlines(keepends=True)
+
     
-    # Check if i is within the range of the text lines
+    # Convert to 0-indexed, and check if i is within the range of the text lines
+    i -= 1
     if i < 0 or i > len(lines):
         raise ValueError(f"Invalid line number: {i}. Must be between 0 and {len(lines)}")
 
@@ -268,53 +270,135 @@ Whenever you are asked to write code, you may describe your thought process, how
 If you want to modify multiple parts of the program, you may include multiple code blocks in your response as separate json objects.
 
 # Examples
-For example, if the user asks you to write a function that returns the sum of two numbers, you could respond with:
+For example, if the current program is empty, and the user asks you to write a function that returns the sum of two numbers, you could respond with:
     Sure, I can help you with that. Here is the code:
     ```json
     {
         "code": "def add(a, b):\n    return a + b\n",
-        "start": 0,
-        "end": 0
+        "start": 1,
+        "end": 1
     }
     ```
 
 And the resulting code would look like this:
 ```python
-0| def add(a, b):
-1|     return a + b
+1| def add(a, b):
+2|     return a + b
 ```
 
 Another example. Say the user's code looks like this:
 ```python
-0| def add(a, b):
-1|     return a + b
-2| 
-3| def multiply(a, b):
-4|     return a * b
+1| def add(a, b):
+2|     return a + b
+3|
+4| def multiply(a, b):
+5|     return a * b
 ```
 And the user asks you to write a subtract function. You could respond with:
     I inserted a subtract function in your code:
     ```json
     {
         "code": "def subtract(a, b):\n    return a - b\n\n",
-        "start": 3,
-        "end": 3
+        "start": 4,
+        "end": 4
     }
     ```
+the resulting code would look like this:
+```python
+1| def add(a, b):
+2|     return a + b
+3|
+4| def subtract(a, b):
+5|     return a - b
+6|
+7| def multiply(a, b):
+8|     return a * b
+```
 
-Notice how in this case, you specify that the code is inserted on line 3
+Notice how in this case, you specify that the code starts and ends on line 4 through 4, which means you are inserting code on line 4, without replacing anything.
+Also notice how you added a newline to the end of your code, this is because the code on line 4 already ends with a newline, so you need to add another one to make sure the original spacing is preserved.
 
 Lets say we have the same code example, and the user asks to make the add function take an arbitrary number of arguments. You can overwrite the function like so:
     I overwrote the add function with a new version that takes an arbitrary number of arguments:
     ```json
     {
         "code": "def add(*args):\n    return sum(args)\n",
-        "start": 0,
-        "end": 2
+        "start": 1,
+        "end": 3
     }
     ```
+The resulting code would look like this:
+```python
+1| def add(*args):
+2|     return sum(args)
+3|
+4| def multiply(a, b):
+5|     return a * b
+```
 
-Notice how this version will start at line 0 and overwrite 2 lines (thus overwriting the original function)
+Notice how this version will start at line 1 and overwrite 2 (end-start == 3-1 == 2) lines (thus overwriting the original function)
+
+Let's say we have this code:
+```python
+1| import math
+2| import numpy as np
+3|
+4| def add(a, b):
+5|     return a + b
+6|
+7| def multiply(a, b):
+8|     return a * b
+```
+And the user asks you to add a new function to the very start of the program. You could respond with:
+    I added a new function to the start of your program:
+    ```json
+    {
+        "code": "def divide(a, b):\n    return a / b\n\n",
+        "start": 1,
+        "end": 1
+    }
+    ```
+The resulting code would look like this:
+```python
+ 1| def divide(a, b):
+ 2|     return a / b
+ 3|
+ 4| import math
+ 5| import numpy as np
+ 6|
+ 7| def add(a, b):
+ 8|     return a + b
+ 9|
+10| def multiply(a, b):
+11|     return a * b
+```
+
+Normally it's not a good idea to put the function before the imports, unless the user specifically asks for it, but this is just an example.
+If the user did not say where to put the code, and you decide to make it the new first function, you could have done this instead:
+    I added a new function to the start of your program:
+    ```json
+    {
+        "code": "def divide(a, b):\n    return a / b\n\n",
+        "start": 4,
+        "end": 4
+    }
+    ```
+The resulting code would look like this:
+```python
+ 1| import math
+ 2| import numpy as np
+ 3|
+ 4| def divide(a, b):
+ 5|     return a / b
+ 6|
+ 7| def add(a, b):
+ 8|     return a + b
+ 9|
+10| def multiply(a, b):
+11|     return a * b
+```
+
+This is a more reasonable place to put the function, since it's right after the imports.
 
 Lastly, lets say you want to make multiple modifications to the code, each modification must be a separate json object. 
 For example, lets say its the same code example, and the user asks you to change the add function to take an arbitrary number of arguments, and also add a divide function. You could respond with:
@@ -322,36 +406,46 @@ For example, lets say its the same code example, and the user asks you to change
     ```json
     {
         "code": "def add(*args):\n    return sum(args)\n",
-        "start": 0,
-        "end": 2
+        "start": 1,
+        "end": 3
     }
     ```
     And I made a new divide function:
     ```json
     {
-        "code": "\ndef divide(a, b):\n    return a / b\n\n",
-        "start": 5,
-        "end": 5
+        "code": "\ndef divide(a, b):\n    return a / b",
+        "start": 6,
+        "end": 6
     }
     ```
-Alternatively you can bundle all the changes up into a single json list
+Alternatively you can bundle all the changes up into a single json list of objects:
     I made the changes you requested:
     ```json
     [
         {
             "code": "def add(*args):\n    return sum(args)\n",
-            "start": 0,
-            "end": 2
+            "start": 1,
+            "end": 3
         },
         {
-            "code": "\ndef divide(a, b):\n    return a / b\n\n",
-            "start": 5,
-            "end": 5
+            "code": "\ndef divide(a, b):\n    return a / b",
+            "start": 6,
+            "end": 6
         }
     ]
     ```
+The resulting code would look like this:
+```python
+1| def add(*args):
+2|     return sum(args)
+3|
+4| def multiply(a, b):
+5|     return a * b
+6|
+7| def divide(a, b):
+8|     return a / b
+```
 
-Notice how for appending to the end of the code, since there's no newline, you have to start with the last line number
 
 # Tips/Notes
 - DO NOT INCLUDE LINE NUMBERS IN YOUR CODE. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself.
@@ -413,7 +507,7 @@ def main():
         response = agent.query(message)
 
         # handle program
-        edits,chat = parse_program(response)
+        edits, chat = parse_program(response)
         
         # ########DEBUG#########
         # if edits:
