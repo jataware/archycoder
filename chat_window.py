@@ -136,7 +136,8 @@ index_html = '''
         }
 
         function appendMessage(message) {
-            $("#chat_history").append("<p>" + message + "</p>");
+            var chunks = message.split(':');
+            $("#chat_history").append("<p><strong>" + chunks[0] + ":</strong> " + chunks.slice(1).join(':') + "</p>");
             $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
         }
 
