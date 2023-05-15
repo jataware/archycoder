@@ -120,7 +120,7 @@ def parse_program(message:str) -> tuple[list[Edit], str]:
     chunks = list(json_block_iter(message))
     edits = [b for b in chunks if isinstance(b, dict)]
 
-    # convert the chunks into a chat message format: [start+1, end+1)\n{code}
+    # convert the chunks into a chat message format: [start, end)\n{code}
     chat_chunks = [f'[{c["start"]}, {c["end"]})\n{c["code"]}' if isinstance(c, dict) else c.strip() for c in chunks]
     chat = '\n\n'.join(chat_chunks)
 
@@ -128,7 +128,7 @@ def parse_program(message:str) -> tuple[list[Edit], str]:
 
 
 def add_line_numbers(program:str) -> str:
-    """Add line numbers to a program. Line numbers start at 0"""
+    """Add line numbers to a program. Line numbers start at 1"""
     lines = program.splitlines(keepends=True)
     width = len(str(len(lines)))
     return ''.join([f"{i+1:>{width}}| {line}" for i, line in enumerate(lines)])
@@ -270,23 +270,9 @@ Whenever you are asked to write code, you may describe your thought process, how
 If you want to modify multiple parts of the program, you may include multiple code blocks in your response as separate json objects.
 
 # Examples
-For example, if the current program is empty, and the user asks you to write a function that returns the sum of two numbers, you could respond with:
-    Sure, I can help you with that. Here is the code:
-    ```json
-    {
-        "code": "def add(a, b):\n    return a + b\n",
-        "start": 1,
-        "end": 1
-    }
-    ```
 
-And the resulting code would look like this:
-```python
-1| def add(a, b):
-2|     return a + b
-```
-
-Another example. Say the user's code looks like this:
+lets say you want to make multiple modifications to the code, each modification must be a separate json object. 
+For example, lets say the code looks like this:
 ```python
 1| def add(a, b):
 2|     return a + b
@@ -294,117 +280,7 @@ Another example. Say the user's code looks like this:
 4| def multiply(a, b):
 5|     return a * b
 ```
-And the user asks you to write a subtract function. You could respond with:
-    I inserted a subtract function in your code:
-    ```json
-    {
-        "code": "def subtract(a, b):\n    return a - b\n\n",
-        "start": 4,
-        "end": 4
-    }
-    ```
-the resulting code would look like this:
-```python
-1| def add(a, b):
-2|     return a + b
-3|
-4| def subtract(a, b):
-5|     return a - b
-6|
-7| def multiply(a, b):
-8|     return a * b
-```
-Notice how in this case, you specify that the code starts and ends on line 4 through 4, which means you are inserting code on line 4, without replacing anything.
-Also notice how you added a newline to the end of your code, this is because the code on line 4 already ends with a newline, so you need to add another one to make sure the original spacing is preserved.
-
-Lets say we have the same code example, and the user asks to make the add function take an arbitrary number of arguments. You can overwrite the function like so:
-    I overwrote the add function with a new version that takes an arbitrary number of arguments:
-    ```json
-    {
-        "code": "def add(*args):\n    return sum(args)\n",
-        "start": 1,
-        "end": 3
-    }
-    ```
-The resulting code would look like this:
-```python
-1| def add(*args):
-2|     return sum(args)
-3|
-4| def multiply(a, b):
-5|     return a * b
-```
-Notice how this version will start at line 1 and overwrite 2 (end-start == 3-1 == 2) lines (thus overwriting the original function)
-
-Let's say we have this code:
-```python
-1| import math
-2| import numpy as np
-3|
-4| def add(a, b):
-5|     return a + b
-6|
-7| def multiply(a, b):
-8|     return a * b
-```
-And the user asks you to add a new function to the very start of the program, and delete the multiply function. You could respond with:
-    I added a new function to the start of your program:
-    ```json
-    {
-        "code": "def divide(a, b):\n    return a / b\n\n",
-        "start": 1,
-        "end": 1
-    }
-    ```
-    I also deleted the multiply function:
-    ```json
-    {
-        "code": "",
-        "start": 7,
-        "end": 9
-    }
-    ```
-The resulting code would look like this:
-```python
- 1| def divide(a, b):
- 2|     return a / b
- 3|
- 4| import math
- 5| import numpy as np
- 6|
- 7| def add(a, b):
- 8|     return a + b
- 9|
-```
-
-Now let's say the user asks you to add a check if the user inputs a 0 to the divide function. You could respond with:
-    I added a check to the divide function:
-    ```json
-    {
-        "code": "    if b == 0:\n        return 0\n",
-        "start": 2,
-        "end": 2
-    }
-    ```
-The resulting code would look like this:
-```python
- 1| def divide(a, b):
- 2|     if b == 0:
- 3|         return 0
- 4|     return a / b
- 5|
- 6| import math
- 7| import numpy as np
- 8|
- 9| def add(a, b):
-10|     return a + b
-11|
-```
-Notice how you had to include extra indentation to make sure the resulting code is indented correctly.
-
-
-Lastly, lets say you want to make multiple modifications to the code, each modification must be a separate json object. 
-For example, lets say its the same code example, and the user asks you to change the add function to take an arbitrary number of arguments, and also add a divide function. You could respond with:
+and the user asks you to change the add function to take an arbitrary number of arguments, and also add a divide function. You could respond with:
     I made this replacement for the add function:
     ```json
     {
@@ -450,22 +326,7 @@ The resulting code would look like this:
 ```
 
 
-# Instructions
-When providing code modifications, make sure to:
-- Do not include line numbers in your code. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself
-- Follow the existing style of the user's code
-- Include the entire code block that needs to be modified, including the opening and closing braces or parentheses.
-- Ensure that the indentation of the new code matches the surrounding code.
-- Specify the correct line numbers for the "start" and "end" values in the JSON object. All lines from the start line, up to but not including the end line will be included in the selection.
-- Only write code/changes that are necessary. Do not overwrite existing code if it is not necessary, unless you are deleting it.
-- Don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
-- Don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it
-- Use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
-
-
-# More Examples
-
-Say the user's code looks like this:
+Another example. Say the user's code looks like this:
 ```python
 <earlier code omitted>
 60|         .chat-controls input {
@@ -511,7 +372,18 @@ The resulting code will look like this:
 
 In this example, the entire code block is included, the indentation is correct, and the "start" and "end" values are accurate. The existing spacing is maintained, and only the necessary changes are made.
 
-By following these revised instructions and examples, future interactions should be more efficient and accurate.
+
+# Instructions
+When providing code modifications, make sure to:
+- Do not include line numbers in your code. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself
+- Follow the existing style of the user's code
+- Include the entire code block that needs to be modified, including the opening and closing braces or parentheses.
+- Ensure that the indentation of the new code matches the surrounding code.
+- Specify the correct line numbers for the "start" and "end" values in the JSON object. All lines from the start line, up to but not including the end line will be included in the selection.
+- Only write code/changes that are necessary. Do not overwrite existing code if it is not necessary, unless you are deleting it.
+- Don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
+- Don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it
+- Use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
 '''
 
 def set_current_program_context(manager: ProgramManager, agent: Agent) -> None:
