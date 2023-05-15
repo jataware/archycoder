@@ -160,8 +160,10 @@ index_html = '''
 
             toggleSendButton(false);
 
-            $.post("/send_message", {message: message}, function(data) {
-                appendMessage("AI", data.response);
+            $.post("/send_messages", {message: message}, function(data) {
+                for (let message of data.messages) {
+                    appendMessage(message.role, message.content);
+                }
                 toggleSendButton(true);
             });
         });
@@ -186,16 +188,17 @@ index_html = '''
 </html>
 '''
 
-
-chat_callback = None
-"""
-def chat_callback(message:str) -> str:
-    # Process a user's message and return the AI's response
-"""
-
 class ChatMessage(TypedDict):
     role: str
     content: str
+
+
+chat_callback = None
+"""
+def chat_callback(message:str) -> list[ChatMessage]:
+    # Process a user's message and return the AI's response (along with any system messages/errors)
+"""
+
 
 history_callback = lambda: [] #default to empty history
 """
@@ -203,7 +206,7 @@ def history_callback() -> list[ChatMessage]:
     # Return a list of ChatMessage objects to be inserted at the start of the chat history
 """
 
-def register_chat_callback(callback:Callable[[str], str]):
+def register_chat_callback(callback:Callable[[str], list[ChatMessage]]):
     global chat_callback
     chat_callback = callback
 
@@ -216,14 +219,13 @@ def register_history_callback(callback:Callable[[], list[ChatMessage]]):
 def index():
     return render_template_string(index_html)
 
-@app.route("/send_message", methods=["POST"])
-def send_message():
+@app.route("/send_messages", methods=["POST"])
+def send_messages():
     message = request.form["message"]
     try:
-        response = chat_callback(message)
+        return jsonify({"messages": chat_callback(message)})
     except Exception as e:
-        response = f"Error: {e}"
-    return jsonify({"response": response})
+        return jsonify({"messages": [{"role": "System", "content": f"Error: {e}"}]})
 
 @app.route("/get_history")
 def get_history():

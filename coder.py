@@ -155,10 +155,10 @@ def insert_line(text: str, line: str, i: int) -> str:
     lines = text.splitlines(keepends=True)
 
     
-    # Convert to 0-indexed, and check if i is within the range of the text lines
+    # check if i is within the range of the text lines, and convert to 0-indexed
+    if i < 1 or i > len(lines)+1:
+        raise ValueError(f"Invalid line number: {i}. Must be between 1 and {len(lines)+1}")
     i -= 1
-    if i < 0 or i > len(lines):
-        raise ValueError(f"Invalid line number: {i}. Must be between 0 and {len(lines)}")
 
     # Insert the new line at the specified position i
     lines.insert(i, line)
@@ -261,8 +261,8 @@ Whenever you are asked to write code, you may describe your thought process, how
 ```json
 {
     "code":  #your code here as a string with any necessary whitespace
-    "start": #the line number where your code start being inserted (inclusive)
-    "end":   #the line number where your code stops being inserted (exclusive)
+    "start": #the line number where your code start being inserted (inclusive). Must be >= 1 and <= the number of lines in the program
+    "end":   #the line number where your code stops being inserted (exclusive). Must be >= 1 and <= the number of lines in the program
              #i.e. code from lines start (inclusive) to end (exclusive) will be replaced by your code
              #if start == end, this means an insertion without any replacement
 }
@@ -421,12 +421,15 @@ def main():
         messages = [ChatMessage(role=role_map[message['role']], content=message['content']) for message in messages]
         return messages
     
-    def on_chat_message(message:str) -> str:
+    def on_chat_message(message:str) -> list[ChatMessage]:
         """Process a user's message and return the AI's response"""
         
         # if the program changed since the AI edited it, tell the AI
         if manager.is_program_changed():
-            agent.clear_all_context()
+            # slightly hacky way to clear all program context messages, but keep error context messages
+            # TODO: look into archytas having a method for clearing specific types of context messages
+            while len(agent._context_lifetimes) > 0:
+                agent.update_timed_context()
             set_current_program_context(manager, agent)
 
         # send the user message to the agent, and get the response
@@ -435,19 +438,24 @@ def main():
         # handle program
         edits, chat = parse_program(response)
 
+        response = [ChatMessage(role='AI', content=chat)]
+
         # insert edits into the program
         for edit in reversed(sorted_edits(edits)):
-            manager.update_program(edit['code'], edit['start'], edit['end'])
+            try:
+                manager.update_program(edit['code'], edit['start'], edit['end'])
+            except Exception as e:
+                msg = f"Error: {e} handling edit {edit}"
+                response.append(ChatMessage(role='System', content=msg))
+                agent.add_permanent_context(msg)
         
         manager.save_chat_history(agent.messages)
 
-        #TODO: should this be displayed in the chat window?
-        #      right now, if the user refreshes, it will show up in the window
         set_current_program_context(manager, agent)
 
         # return the AI response for the UI to render
         # TODO: AI response loses formatting. also doesn't have code highlighting...
-        return chat
+        return response
 
     # regester callbacks for the UI
     register_chat_callback(on_chat_message)
