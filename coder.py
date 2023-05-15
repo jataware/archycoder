@@ -488,7 +488,8 @@ def main():
 
     def on_get_chat_history() -> list[ChatMessage]:
         """Return the chat history"""
-        messages = [ChatMessage(role=role_map[message['role']], content=message['content']) for message in agent.messages]
+        messages = get_context_free_messages(agent.messages)
+        messages = [ChatMessage(role=role_map[message['role']], content=message['content']) for message in messages]
         return messages
     
     def on_chat_message(message:str) -> str:
@@ -499,21 +500,11 @@ def main():
             agent.clear_all_context()
             set_current_program_context(manager, agent)
 
-        ########DEBUG#########
-        print(f'User: {message}')
-        ######################
-
         # send the user message to the agent, and get the response
         response = agent.query(message)
 
         # handle program
         edits, chat = parse_program(response)
-        
-        # ########DEBUG#########
-        # if edits:
-        #     print(edits)
-        #     print(add_line_numbers(manager.get_program()))
-        # ######################
 
         # insert edits into the program
         for edit in reversed(sorted_edits(edits)):
