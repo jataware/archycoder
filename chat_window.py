@@ -227,10 +227,7 @@ def index():
 @app.route("/send_messages", methods=["POST"])
 def send_messages():
     message = request.form["message"]
-    try:
-        return jsonify({"messages": chat_callback(message)})
-    except Exception as e:
-        return jsonify({"messages": [{"role": "System", "content": f"Error: {e}"}]})
+    return jsonify({"messages": chat_callback(message)})
 
 @app.route("/get_history")
 def get_history():
