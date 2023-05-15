@@ -2,35 +2,29 @@
 Interactive coding session with GPT-4
 
 ## Getting Started
-1. download/install archytas repo (https://github.com/jataware/archytas):
+1. Install dependencies
     ```
-    # make sure poetry is installed
-    pip install poetry
+    pip install -r requirements.txt
+    ```
 
-    # clone and install
-    git clone git@github.com:jataware/archytas.git
-    cd archytas
-    poetry install
-
-    # make sure OPENAI_API_KEY var is set
-    # or pass it in as an argument to the agent
+2. Set openai api key:
+    ```
     export OPENAI_API_KEY="sk-..."
     ```
 
-2. install other dependencies
-    ```
-    pip install flask
-    pip install easyrepl
-    ```
-
-3. run the demo
+3. Run the demo
     ```
     python coder.py [file_to_edit.py]
     ```
-    - input the name of a file that you want the AI edit. if it doesn't exist, it will be created in the `sessions/` directory
+    - Input the name of a file that you want the AI edit. if it doesn't exist, it will be created in the `sessions/` directory
 
-4. open http://127.0.0.1:5000 in your browser
-    - you can ask the assistant to write programs, which will then show up in your file via git-style conflict markers (e.g. `<<<<<<<`, `=======`, `>>>>>>>`)
-    - the AI can see edits you make to the file, and will adjust its outputs accordingly
+4. Run the chat window: http://127.0.0.1:5000
+    - You can ask the assistant to write programs, which will then show up in your file via git-style conflict markers (e.g. `<<<<<<<`, `=======`, `>>>>>>>`)
+    - The AI can see edits you make to the file, and will adjust its outputs accordingly
     - If you want the AI to see any errors, or results from running the code, you have to copy it into the chat window
-     
+
+## Tips
+- If the AI seems to be stuck, check the terminal for any errors. But sometimes it just takes a while to respond.
+- Pass the `--clear-history` flag to start a chat without loading any previous history
+- If you want to restart, you should both restart the terminal and refresh the browser
+- Occasionally the AI will miss including some lines of code in the lines it selects for edits. So pay attention to the diff markers, and make sure to move over any lines that the AI missed
