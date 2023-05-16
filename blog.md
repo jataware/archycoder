@@ -12,7 +12,7 @@ Interactively editing code with GPT-4
 </div>
 <br/>
 
-ArchyCoder is a minimal python program that runs a basic AI chat window in the browser where you can talk to GPT-4, and interactively edit a file. Any updates you make to the file are presented to GPT-4 as context, and GPT-4 can suggest code edits which will show up in your editor.
+[ArchyCoder](https://github.com/jataware/archycoder) is a minimal python program that runs a basic AI chat window in the browser where you can talk to GPT-4, and interactively edit a file. Any updates you make to the file are presented to GPT-4 as context, and GPT-4 can suggest code edits which will show up in your editor.
 
 Process:
 1. start ArchyCoder in the terminal
