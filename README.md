@@ -1,6 +1,16 @@
 # Archy Coder
 Interactive coding session with GPT-4
 
+# Demo
+Short demo of using ArchyCoder interactively to help edit an existing python file.
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=-I0BAw2HOIA">
+    <img src="assets/demo.gif" alt="Watch the video">
+  </a>
+  <br/>
+  click to watch original video on youtube
+</div>
+
 ## Getting Started
 1. Install dependencies
     ```
