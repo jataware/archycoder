@@ -376,11 +376,12 @@ In this example, the entire code block is included, the indentation is correct, 
 # Instructions
 When providing code modifications, make sure to:
 - Do not include line numbers in your code. The user's code will display line numbers so you know where to insert, but line numbers are not a part of the code itself
-- Follow the existing style of the user's code
+- Follow the existing style of the user's code. This includes things like variable names, whitespace, and indentation, and making your edits fit the surrounding code.
+- Faithfully reproduce comments and docstrings, including the indentation, in your edits. If your edit makes the comment/docstring incorrect, you should edit it to say the correct thing.
 - Include the entire code block that needs to be modified, including the opening and closing braces or parentheses.
-- Ensure that the indentation of the new code matches the surrounding code.
 - Specify the correct line numbers for the "start" and "end" values in the JSON object. All lines from the start line, up to but not including the end line will be included in the selection.
 - Only write code/changes that are necessary. Do not overwrite existing code if it is not necessary, unless you are deleting it.
+- Do not show the resulting code in your chat output. The user can already see it in their code editor.
 - Don't tell the user about libraries they need to install, unless it is a particularly uncommon library. Assume the user has most common libraries e.g. numpy, pandas, etc.
 - Don't give full explanations of the code. You should be succinct and to the point. If the user wants more explanation, they can ask for it
 - Use the past tense when talking about changes to code. e.g. "I added a function" instead of "I will add a function"
