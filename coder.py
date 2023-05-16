@@ -12,22 +12,6 @@ import pdb
 
 
 
-#TODO:
-# [important]
-# - capture the stdout from running the program, and save it for sending to the agent
-
-# [nice to haves]
-# - git merge/rebase interface for merging in AI's changes
-# - take input arg for file to watch
-# - save chat history. chat history should be loaded into the html page window on load
-# - folder for chat histories
-# - chat history is named <watch_file>.history
-# - agent.py. should have a member variable for the loading context. The can pass in a no-op if don't want the spinner in the terminal
-# - prettier rendering of the chat window + code highlighting
-# - is there a way to stream the llm text the same way that chatgpt does?
-
-
-
 CONTEXT_PREFIX = 'Context: The current program is:\n'
 
 role_map = {
