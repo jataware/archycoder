@@ -134,7 +134,7 @@ def add_line_numbers(program:str) -> str:
     return ''.join([f"{i+1:>{width}}| {line}" for i, line in enumerate(lines)])
 
 
-def insert_line(text: str, line: str, i: int) -> str:
+def insert_line(text: str, line: str, i: int, newline:str='\n') -> str:
     """
     Insert a line into a text string at the specified line number.
 
@@ -144,6 +144,7 @@ def insert_line(text: str, line: str, i: int) -> str:
         text (str): the text to insert the line into
         line (str): the line to insert
         i (int): the line number to insert the line at. line 1 is the first line of the text
+        newline (str, optional): the line ending to use for the inserted line. Defaults to '\n'.
 
     Raises:
         ValueError: if i is not a valid line number
@@ -154,11 +155,15 @@ def insert_line(text: str, line: str, i: int) -> str:
     # Split the text into lines
     lines = text.splitlines(keepends=True)
 
-    
+
     # check if i is within the range of the text lines, and convert to 0-indexed
     if i < 1 or i > len(lines)+1:
         raise ValueError(f"Invalid line number: {i}. Must be between 1 and {len(lines)+1}")
     i -= 1
+
+    #if inserting at the end, and the last line didn't have a line ending, add one
+    if i == len(lines) and not lines[-1].endswith(newline):
+        lines[-1] += newline
 
     # Insert the new line at the specified position i
     lines.insert(i, line)
@@ -223,9 +228,9 @@ class ProgramManager:
         newline = '\r\n' if '\r\n' in program else '\n' #detect the line ending
         if len(code) > 0 and not code.endswith(newline): 
             code += newline # ensure the code ends with a newline
-        new_program = insert_line(program, f"<<<<<<< Original Code{newline}", start)
-        new_program = insert_line(new_program, f"======={newline}", end+1)
-        new_program = insert_line(new_program, f"{code}>>>>>>> LLM Suggestion{newline}", end+2)
+        new_program = insert_line(program, f"<<<<<<< Original Code{newline}", start, newline)
+        new_program = insert_line(new_program, f"======={newline}", end+1, newline)
+        new_program = insert_line(new_program, f"{code}>>>>>>> LLM Suggestion{newline}", end+2, newline)
 
         with open(self.filename, 'w') as f:
             f.write(new_program)
