@@ -1,4 +1,4 @@
-# Archy Coder
+# ArchyCoder
 Interactive coding session with GPT-4
 
 # Demo
