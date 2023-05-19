@@ -1,6 +1,5 @@
 from archytas.agent import Agent, no_spinner, Role, Message
 from chat_window import run_chat_window, register_chat_callback, register_history_callback, ChatMessage
-import subprocess
 import sys
 from easyrepl import readl
 import json
