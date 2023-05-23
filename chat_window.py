@@ -114,6 +114,9 @@ index_html = '''
         .error-message {
             color: red;
         }
+        p {
+            white-space: pre-wrap;
+        }
     </style>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
@@ -141,8 +144,11 @@ index_html = '''
         function appendMessage(name, message) {
             var isError = message.toLowerCase().startsWith("error");
             var messageClass = isError ? "error-message" : "";
-            $("#chat_history").append("<p class='" + messageClass + "'><strong>" + name + ":</strong> " + message + "</p>");
-            $("#chat_history").scrollTop($("#chat_history")[0].scrollHeight);
+            var newMessage = document.createElement('p');
+            newMessage.className = messageClass;
+            newMessage.innerHTML = '<strong>' + name + ':</strong> ' + message;
+            $('#chat_history').append(newMessage);
+            $('#chat_history').scrollTop($('#chat_history')[0].scrollHeight);
         }
 
         function toggleSendButton(state) {
