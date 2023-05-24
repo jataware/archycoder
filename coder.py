@@ -1,6 +1,6 @@
 from archytas.agent import Agent, no_spinner, Role, Message
 from chat_window import run_chat_window, register_chat_callback, register_history_callback, ChatMessage
-import sys
+import argparse
 from easyrepl import readl
 import json
 import os
@@ -386,18 +386,27 @@ def set_current_program_context(manager: ProgramManager, agent: Agent) -> None:
     agent.add_timed_context(f"{CONTEXT_PREFIX}```python\n{lined_program}```")
 
 
-def main():
-    if len(sys.argv) < 2:
-        file_path = readl(prompt="What would you like to name your code file? ")
-    else:
-        file_path = sys.argv[1]
+def parse_args():
+    parser = argparse.ArgumentParser(description='Coding Assistant')
+    parser.add_argument('file_path', help='(optional) name of the code file', nargs='?')
+    parser.add_argument('--clear-history', action='store_true', help='clear chat history')
+    args = parser.parse_args()
 
+    # handle optional file path
+    if args.file_path is None:
+        args.file_path = readl(prompt="What would you like to name your code file? ")
+
+    return args
+
+def main():
+    args = parse_args()
+    file_path = args.file_path
 
     manager = ProgramManager(file_path)
     agent = Agent(prompt=coder_prompt, spinner=no_spinner)
 
     # Load chat history if it exists
-    if '--clear-history' not in sys.argv:
+    if not args.clear_history:
         agent.messages = manager.load_chat_history()
 
     # initialize the program context
