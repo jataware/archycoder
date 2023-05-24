@@ -439,25 +439,38 @@ def main():
             set_current_program_context(manager, agent)
 
         # send the user message to the agent, and get the response
-        response = agent.query(message)
+        raw_response = agent.query(message)
+        response = []
 
         # handle program
-        edits, chat = parse_program(response)
+        try:
+            edits, chat = parse_program(raw_response)
+        except Exception as e:
+            edits, chat = [], f"Error parsing response: {e}"
+            response.append(ChatMessage(role='System', content=chat))
+            agent.add_permanent_context(chat)
 
-        response = [ChatMessage(role='AI', content=chat)]
+        response.append(ChatMessage(role='AI', content=chat))
+
+        #sort the edits by start line number
+        try:
+            edits = reversed(sorted_edits(edits))
+        except Exception as e:
+            edits, msg = [], f"Error sorting edits: {e}"
+            response.append(ChatMessage(role='System', content=msg))
+            agent.add_permanent_context(msg)
 
         # insert edits into the program
-        for edit in reversed(sorted_edits(edits)):
+        for edit in edits:
             try:
                 manager.update_program(edit['code'], edit['start'], edit['end'])
             except Exception as e:
-                msg = f"Error: {e} handling edit {edit}"
+                msg = f"Error: {e} while handling edit {edit}"
                 response.append(ChatMessage(role='System', content=msg))
                 agent.add_permanent_context(msg)
         
         manager.save_chat_history(agent.messages)
 
-        set_current_program_context(manager, agent)
 
         # return the AI response for the UI to render
         # TODO: AI response loses formatting. also doesn't have code highlighting...

@@ -218,6 +218,11 @@ def history_callback() -> list[ChatMessage]:
 """
 
 def register_chat_callback(callback:Callable[[str], list[ChatMessage]]):
+    """
+    Register a callback function to be called when the user sends a message
+
+    NOTE: callback function must not throw any exceptions
+    """
     global chat_callback
     chat_callback = callback
 
