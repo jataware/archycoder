@@ -155,9 +155,9 @@ def insert_line(text: str, line: str, i: int, newline:str='\n') -> str:
     return ''.join(lines)
 
 
-def get_context_free_messages(messages:list[Message]) -> list[Message]:
+def get_clean_chat_history(messages:list[Message]) -> list[Message]:
     """
-    Filter out any context messages the system inserted into the chat.
+    Filter out any context messages the system inserted into the chat containing the current state of the program.
     """
     return [message for message in messages if not (message['role'] == Role.system and message['content'].startswith(CONTEXT_PREFIX))]
 
@@ -232,13 +232,13 @@ class ProgramManager:
                 history = json.load(f)
         
         #filter out context messages
-        history = get_context_free_messages(history)
+        history = get_clean_chat_history(history)
 
         return history
     
     def save_chat_history(self, history: list) -> None:
         #filter out context messages
-        history = get_context_free_messages(history)
+        history = get_clean_chat_history(history)
         with open(self.chat_history_filename, 'w') as f:
             json.dump(history, f)
 
@@ -405,9 +405,17 @@ def main():
         
 
     def on_get_chat_history() -> list[ChatMessage]:
-        """Return the chat history"""
-        messages = get_context_free_messages(agent.messages)
-        messages = [ChatMessage(role=role_map[message['role']], content=message['content']) for message in messages]
+        """Return the chat history (converting any LLM messages into properly formatted edit blocks)"""
+        messages = []
+        for message in get_clean_chat_history(agent.messages):
+            if message['role'] == Role.assistant:
+                # convert LLM messages into lists of edits
+                _, chat = parse_program(message['content'])
+                messages.append(ChatMessage(role='AI', content=chat))
+            else:
+                #copy all other messages verbatim
+                messages.append(ChatMessage(role=role_map[message['role']], content=message['content']))
+
         return messages
     
     def on_chat_message(message:str) -> list[ChatMessage]:
