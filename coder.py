@@ -104,7 +104,7 @@ def parse_program(message:str) -> tuple[list[Edit], str]:
     edits = [b for b in chunks if isinstance(b, dict)]
 
     # convert the chunks into a chat message format: [start, end)\n{code}
-    chat_chunks = [f'[{c["start"]}, {c["end"]})\n{c["code"]}' if isinstance(c, dict) else c.strip() for c in chunks]
+    chat_chunks = [f'[{c["start"]}, {c["end"]})\n<code>{c["code"]}</code>' if isinstance(c, dict) else c.strip() for c in chunks]
     chat = '\n\n'.join(chat_chunks)
 
     return edits, chat
