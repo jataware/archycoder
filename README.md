@@ -26,7 +26,7 @@ Short demo of using ArchyCoder interactively to help edit an existing python fil
     ```
     python coder.py [file_to_edit.py]
     ```
-    - Input the name of a file that you want the AI edit. if it doesn't exist, it will be created in the `sessions/` directory
+    - Input the name of a file that you want the AI edit. if it doesn't exist, it will be created at the specified path.
 
 4. Run the chat window: http://127.0.0.1:5000
     - You can ask the assistant to write programs, which will then show up in your file via git-style conflict markers (e.g. `<<<<<<<`, `=======`, `>>>>>>>`)
